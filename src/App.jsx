@@ -9,6 +9,7 @@ import ResetAlertModal from './components/ResetAlertModal';
 import WinnerModal from './components/WinnerModal';
 import { useReward } from "react-rewards";
 import WinnerLogModal from './components/WinnerLogModal';
+import PlayModeChange from './components/PlayModeChange';
 
 export const WinnerContext = React.createContext("");
 
@@ -74,9 +75,6 @@ function App() {
         setWinner("X");
       }
     }
-
-
-
   };
 
   // マスをクリック
@@ -115,11 +113,6 @@ function App() {
       newShakes[i] = "shake";
       setShakes(newShakes);
     }
-  };
-
-  // 勝敗を見る
-  const handleShowLog = () => {
-    setWinnerLogModalShow(true);
   };
 
   // shakeを解除
@@ -241,15 +234,20 @@ function App() {
           ) : (
             <div className='w-100'>
               <Button variant='primary' className='mt-2 w-100' onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}>マスをリセット</Button>
-              <Button className='mt-2 w-100' onClick={handleShowLog}>勝敗を見る</Button>
+              <Button className='mt-2 w-100' onClick={() => setWinnerLogModalShow(true)}>勝敗を見る</Button>
             </div>
           )}
         </div >
+        {/* 紙吹雪 */}
+        <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
+          <div id='reward' />
+        </div>
       </div >
-      {/* 紙吹雪 */}
-      <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
-        <div id='reward' />
-      </div>
+
+      {/* ここでオンラインモードとかに切り替えられるようにしたい */}
+      {/*  一時的に非表示中 */}
+      <PlayModeChange />
+
       <ResetAlertModal
         show={resetModalShow}
         handleAgree={() => handleSquareReset("reset")}
