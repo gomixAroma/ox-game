@@ -1,0 +1,45 @@
+@import "./variables.scss";
+
+.wrap {
+    width: $square-size * 3;
+}
+
+.row {
+    display: flex;
+}
+
+.mark {
+    width: $mark-size;
+    height: $mark-size;
+}
+
+.box {
+    border: $border solid #000;
+    width: $square-size;
+    height: $square-size;
+    display: grid;
+    place-items: center;
+    margin: calc($border * -1) 0 0 calc($border * -1);
+}
+
+.title {
+    font-size: 2rem;
+    margin-left: 5px;
+
+}
+
+.top {
+    width: $square-size * 3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+}
+
+.confetti {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}

@@ -1,0 +1,36 @@
+.logTable {
+    border: 1px solid #000;
+    border-radius: 10px;
+    max-height: 200px;
+    height: 100%;
+    overflow-y: scroll;
+}
+
+
+.log {
+    padding: 0 20px;
+    border-top: 1px solid #000;
+    padding: 10px;
+    transition: all .2s;
+
+    &:hover {
+        background-color: lightskyblue;
+        cursor: pointer;
+    }
+}
+
+
+
+.log>div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    // margin-bottom: 8px;
+    width: 100%;
+
+    text-wrap: nowrap;
+}
+
+.borderNone {
+    border: none;
+}

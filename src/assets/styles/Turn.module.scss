@@ -1,0 +1,21 @@
+.turn {
+    display: flex;
+}
+
+.text {
+    text-wrap: nowrap;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 5px;
+}
+
+.mark {
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+}
+
+.winner {
+    margin-right: 5px;
+}
