@@ -23,7 +23,7 @@ const Turn = ({ turn, logMode, winner }) => {
                     ) : (
                         <img src={O} alt="マルのターンです。" className={style.mark} />
                     )}
-                    <div className={style.text} aria-hidden="true">のターンです</div>
+                    <div className={style.text} aria-hidden="true">のターン</div>
                 </div>
             )}
         </>
