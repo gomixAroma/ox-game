@@ -24,8 +24,7 @@ function App() {
   const [winner, setWinner] = useState(null);
   const [logMode, setLogMode] = useState(false);
 
-  const random = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
-  const startPlayer = random;
+  const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
   const [turn, setTurn] = useState(startPlayer);
 
   // モーダル関連
@@ -198,7 +197,6 @@ function App() {
     window.location.reload();
   }
 
-  console.log(playMode)
 
   return (
     <>
