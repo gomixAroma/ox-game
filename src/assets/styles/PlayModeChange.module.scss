@@ -1,12 +1,40 @@
+$box-shadow-X: 0px;
+$box-shadow-Y: 5px;
+$box-shadow-gradation: 15px;
+$box-shadow-diffusion: 0px;
+
 .playChange {
     position: fixed;
+    display: flex;
     z-index: 1000;
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
+    transition: all 0.3s ease-in-out;
     padding: 10px 20px;
     border-radius: 50px;
     background-color: #fff;
+    text-wrap: nowrap;
+    box-shadow: $box-shadow-X $box-shadow-Y $box-shadow-gradation $box-shadow-diffusion rgba(0, 0, 0, 0.35);
+    cursor: pointer;
 
-    box-shadow: 0px 5px 15px 0px rgba(0, 0, 0, 0.35);
+    &>div>svg {
+        width: 30px;
+    }
+
+    &:hover {
+        transform: translateX(-50%) translateY(2px);
+        box-shadow: $box-shadow-X calc($box-shadow-Y - 2px) $box-shadow-gradation $box-shadow-diffusion rgba(0, 0, 0, 0.35);
+    }
+
+    &:active {
+        transition: all 0.05s ease-in-out;
+        transform: translateX(-50%) translateY(4px);
+    }
+}
+
+.changeText {
+    font-size: 10px;
+    display: grid;
+    place-items: center;
 }

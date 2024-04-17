@@ -25,7 +25,17 @@
 .title {
     font-size: 2rem;
     margin-left: 5px;
+    position: relative;
+    margin-bottom: -15px;
 
+    &>span:nth-child(2) {
+        position: absolute;
+        text-wrap: nowrap;
+        top: -.8em;
+        left: 0;
+        margin-left: 4px;
+        font-size: 13px;
+    }
 }
 
 .top {
