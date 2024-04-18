@@ -22,7 +22,7 @@ const PlayModeChange = (props) => {
     }, [err])
 
     // 一時的に非表示
-    const visible = false;
+    const visible = true;
     if (!visible) return null;
 
     const handleChange = (mode) => {
