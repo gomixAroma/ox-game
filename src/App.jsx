@@ -13,10 +13,10 @@ import PlayModeChange from './components/PlayModeChange';
 import onlineSVG from "./assets/images/SVG/online.svg";
 
 export const WinnerContext = React.createContext("");
-export const PlayModeContext = React.createContext("");
 
 function App() {
   const [playMode, setPlayMode] = useState("offline");
+  const [clickDisable, setClickDisable] = useState(false);
 
   const [shakes, setShakes] = useState(["", "", "", "", "", "", "", "", ""]);
   const [squares, setSquares] = useState(["", "", "", "", "", "", "", "", ""]);
@@ -32,6 +32,10 @@ function App() {
   const [winnerModalShow, setWinnerModalShow] = useState(false);
   const [winnerLogModalShow, setWinnerLogModalShow] = useState(false);
   // End
+
+  // プレイモード変更
+  const [playModeChangeShow, setPlayModeChangeShow] = useState(false);
+  const [connectModalShow, setConnectModalShow] = useState(false);
 
   const { reward } = useReward("reward", "confetti", { spread: 100, zIndex: 1000, elementCount: 200 });
 
@@ -83,7 +87,7 @@ function App() {
 
   // マスをクリック
   const handleClick = (i) => {
-    if (winner) return;
+    if (winner || clickDisable) return;
 
     if (squares[i] === "") {
       const newSquares = squares.slice();
@@ -132,6 +136,16 @@ function App() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shakes])
+
+  useEffect(() => {
+    handleSquareReset("reset");
+    if (playMode === "online") {
+      setClickDisable(true);
+    } else {
+      setClickDisable(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playMode])
 
   // マスをリセット
   const handleSquareReset = (mode) => {
@@ -200,84 +214,93 @@ function App() {
 
   return (
     <>
-      <PlayModeContext.Provider value={playMode}>
-        <div className={`App`}>
-          {/* <Button onClick={handleMinMax}>RUN</Button> */}
+      <div className={`App`}>
 
-          <div className={style.wrap}>
-            {/* タイトル */}
-            {logMode && (
-              <div className='text-center'>
-                <div>プレイした日時</div>
-                <div>{date_param_state}</div>
-              </div>
-            )}
-            <div className={style.top}>
-              <div className={style.title} aria-label='タイトル'>
-                <div className='d-flex'>
-                  <span>三目並べ</span>
-                  <img src={onlineSVG} alt="オンラインモード" className={playMode === "offline" ? "invisible" : "visible"} width={40} style={{ marginLeft: "5px", }} />
-                </div>
-                <span aria-label='モード:'>{playMode === "offline" ? "オフライン" : "オンライン"}</span>
-              </div>
-              {/* 履歴を見るときはターンではなく勝者を表示 */}
-              <Turn turn={turn} logMode={logMode} winner={winner} />
+        <div className={style.wrap}>
+          {/* タイトル */}
+          {logMode && (
+            <div className='text-center'>
+              <div>プレイした日時</div>
+              <div>{date_param_state}</div>
             </div>
-            {/* ゲーム盤 */}
-            <div className={style.row}>
-              <Square i={0} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={1} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={2} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            </div>
-            <div className={style.row}>
-              <Square i={3} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={4} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={5} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            </div>
-            <div className={style.row}>
-              <Square i={6} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={7} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-              <Square i={8} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            </div>
-            {/* 履歴を見るときはボタンを非表示 */}
-            {logMode || playMode === "online" ? (
-              <div className={`w-100 ${playMode === "online" && ("d-none")}`}>
-                <Button className='mt-2 w-100' onClick={handleBack}>戻る</Button>
+          )}
+          <div className={style.top}>
+            <div className={style.title} aria-label='タイトル'>
+              <div className='d-flex'>
+                <span>三目並べ</span>
+                <img src={onlineSVG} alt="オンラインモード" className={playMode === "offline" ? "invisible" : "visible"} width={40} style={{ marginLeft: "5px", }} />
               </div>
-            ) : (
-              <div className='w-100'>
-                <Button variant='primary' className='mt-2 w-100' onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}>マスをリセット</Button>
-                <Button className='mt-2 w-100' onClick={() => setWinnerLogModalShow(true)}>勝敗を見る</Button>
-              </div>
-            )}
-          </div >
-          {/* 紙吹雪 */}
-          <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
-            <div id='reward' />
+              <span aria-label='モード:'>{playMode === "offline" ? "オフライン" : "オンライン"}</span>
+            </div>
+            {/* 履歴を見るときはターンではなく勝者を表示 */}
+            <Turn turn={turn} logMode={logMode} winner={winner} />
           </div>
+          {/* ゲーム盤 */}
+          <div className={style.row}>
+            <Square i={0} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={1} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={2} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+          </div>
+          <div className={style.row}>
+            <Square i={3} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={4} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={5} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+          </div>
+          <div className={style.row}>
+            <Square i={6} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={7} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+            <Square i={8} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
+          </div>
+          {/* 履歴を見るときはボタンを非表示 */}
+          {logMode || playMode === "online" ? (
+            <div className={`w-100 ${playMode === "online" && ("d-none")}`}>
+              <Button className='mt-2 w-100' onClick={handleBack}>戻る</Button>
+            </div>
+          ) : (
+            <div className='w-100'>
+              <Button variant='primary' className='mt-2 w-100' onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}>マスをリセット</Button>
+              <Button className='mt-2 w-100' onClick={() => setWinnerLogModalShow(true)}>勝敗を見る</Button>
+            </div>
+          )}
+          {playMode === "online" && (
+            <div className='w-100'>
+              <Button className='mt-2 w-100' onClick={() => setConnectModalShow(true)}>オンラインに接続</Button>
+            </div>
+          )}
         </div >
+        {/* 紙吹雪 */}
+        <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
+          <div id='reward' />
+        </div>
+      </div >
 
-        {/* ここでオンラインモードとかに切り替えられるようにしたい */}
-        {/*  一時的に非表示中 */}
-        <PlayModeChange setPlayMode={setPlayMode} />
+      {/* ここでオンラインモードとかに切り替えられるようにしたい */}
+      {/*  一時的に非表示中 */}
+      <PlayModeChange
+        playMode={playMode}
+        setPlayMode={setPlayMode}
+        playModeChangeShow={playModeChangeShow}
+        setPlayModeChangeShow={setPlayModeChangeShow}
+        connectModalShow={connectModalShow}
+        setConnectModalShow={setConnectModalShow}
+      />
 
-        <ResetAlertModal
-          show={resetModalShow}
-          handleAgree={() => handleSquareReset("reset")}
-          onHide={() => setResetModalShow(false)} />
-        <WinnerContext.Provider value={winner}>
-          <WinnerModal
-            show={winnerModalShow}
-            onHide={() => setWinnerModalShow(false)}
-            backdropClassName='winner-modal-backdrop'
-            contentClassName='winner-modal-content'
-          />
-        </WinnerContext.Provider>
-        <WinnerLogModal
-          show={winnerLogModalShow}
-          handleClose={() => setWinnerLogModalShow(false)}
+      <ResetAlertModal
+        show={resetModalShow}
+        handleAgree={() => handleSquareReset("reset")}
+        onHide={() => setResetModalShow(false)} />
+      <WinnerContext.Provider value={winner}>
+        <WinnerModal
+          show={winnerModalShow}
+          onHide={() => setWinnerModalShow(false)}
+          backdropClassName='winner-modal-backdrop'
+          contentClassName='winner-modal-content'
         />
-      </PlayModeContext.Provider>
+      </WinnerContext.Provider>
+      <WinnerLogModal
+        show={winnerLogModalShow}
+        handleClose={() => setWinnerLogModalShow(false)}
+      />
     </ >
   )
 }

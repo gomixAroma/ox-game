@@ -38,3 +38,17 @@ $box-shadow-diffusion: 0px;
     display: grid;
     place-items: center;
 }
+
+.connectBtn {
+    display: flex;
+
+    $margin : 5px;
+
+    &>button:nth-child(1) {
+        margin-right: $margin;
+    }
+
+    &>button:nth-child(2) {
+        margin-left: $margin;
+    }
+}

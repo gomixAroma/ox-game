@@ -71,7 +71,7 @@ const WinnerLogModal = (props) => {
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={props.handleClose}>
+                <Button variant='secondary' onClick={props.handleClose} className='w-100'>
                     閉じる
                 </Button>
             </Modal.Footer>
