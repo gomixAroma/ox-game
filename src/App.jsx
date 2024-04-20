@@ -13,6 +13,14 @@ import Head from './components/Head';
 export const WinnerContext = React.createContext("");
 
 function App() {
+
+  //仮
+  const visible = false;
+
+
+
+
+
   const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
   const [turn, setTurn] = useState(startPlayer);
 
@@ -311,19 +319,23 @@ function App() {
         </div >
       </div >
 
-      {/* ここでオンラインモードとかに切り替えられるようにしたい */}
-      <PlayModeChange
-        playModeChangeRef={playModeChangeRef}
-        playMode={playMode}
-        setPlayMode={setPlayMode}
-        playModeChangeShow={playModeChangeShow}
-        setPlayModeChangeShow={setPlayModeChangeShow}
-        connectModalShow={connectModalShow}
-        setConnectModalShow={setConnectModalShow}
-        setOnlineTurn={setOnlineTurn}
-        setIsConnect={setIsConnect}
-        setRoomPass={setRoomPass}
-      />
+      {visible && (
+        <>
+          <PlayModeChange
+            playModeChangeRef={playModeChangeRef}
+            playMode={playMode}
+            setPlayMode={setPlayMode}
+            playModeChangeShow={playModeChangeShow}
+            setPlayModeChangeShow={setPlayModeChangeShow}
+            connectModalShow={connectModalShow}
+            setConnectModalShow={setConnectModalShow}
+            setOnlineTurn={setOnlineTurn}
+            setIsConnect={setIsConnect}
+            setRoomPass={setRoomPass}
+          />
+        </>
+      )}
+
 
       <ResetAlertModal
         show={resetModalShow}

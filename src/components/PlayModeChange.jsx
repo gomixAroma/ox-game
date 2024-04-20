@@ -30,11 +30,7 @@ const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
     useEffect(() => {
         SetTurn();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data])
-
-    // 一時的に非表示
-    const visible = false;
-    if (!visible) return null;
+    }, [data]);
 
     const handleChange = (mode) => {
         props.setPlayMode(mode);
