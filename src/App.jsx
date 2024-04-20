@@ -1,47 +1,48 @@
 import './App.scss'
-import Square from './components/Square'
 import style from './assets/styles/Square.module.scss'
 import React, { useEffect, useState } from 'react';
-import Turn from './components/Turn';
 import { Button } from 'react-bootstrap';
 import ResetAlertModal from './components/ResetAlertModal';
-// import confetti from 'canvas-confetti'
 import WinnerModal from './components/WinnerModal';
 import { useReward } from "react-rewards";
 import WinnerLogModal from './components/WinnerLogModal';
 import PlayModeChange from './components/PlayModeChange';
-import onlineSVG from "./assets/images/SVG/online.svg";
+import SquaresBox from './components/SquaresBox';
+import Head from './components/Head';
 
 export const WinnerContext = React.createContext("");
 
 function App() {
-  const [playMode, setPlayMode] = useState("offline");
-  const [clickDisable, setClickDisable] = useState(false);
+  const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
+  const [turn, setTurn] = useState(startPlayer);
 
   const [shakes, setShakes] = useState(["", "", "", "", "", "", "", "", ""]);
   const [squares, setSquares] = useState(["", "", "", "", "", "", "", "", ""]);
   const [squareRemove, setSquareRemove] = useState([0, 0, 0, 0, 0, 0, 0, 0, 0]);
   const [winner, setWinner] = useState(null);
   const [logMode, setLogMode] = useState(false);
-
-  const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
-  const [turn, setTurn] = useState(startPlayer);
+  const [clickDisable, setClickDisable] = useState(false);
 
   // モーダル関連
   const [resetModalShow, setResetModalShow] = useState(false);
   const [winnerModalShow, setWinnerModalShow] = useState(false);
   const [winnerLogModalShow, setWinnerLogModalShow] = useState(false);
-  // End
-
   // プレイモード変更
+  const [playMode, setPlayMode] = useState("offline");
   const [playModeChangeShow, setPlayModeChangeShow] = useState(false);
   const [connectModalShow, setConnectModalShow] = useState(false);
 
-  const { reward } = useReward("reward", "confetti", { spread: 100, zIndex: 1000, elementCount: 200 });
+  //オンラインモードのState
+  const [onlineTurn, setOnlineTurn] = useState(null);
+  const [isConnect, setIsConnect] = useState(false);
+  const [roomPass, setRoomPass] = useState("");
 
+
+  const { reward } = useReward("reward", "confetti", { spread: 100, zIndex: 1000, elementCount: 200 });
 
   const winPattern = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
+  const playModeChangeRef = React.createRef(null);
 
   const [date_param_state, setDateParam] = useState(null);
   //履歴閲覧
@@ -57,8 +58,81 @@ function App() {
       setSquares(squares_param.split(","));
       setWinner(winner_param);
     }
+
+    //パラメーターによってオンラインにするかオフラインにするかを切り替える
+    const playMode_param = url.searchParams.get("mode");
+    if (playMode_param === "online") {
+      setPlayMode("online")
+    } else {
+      setPlayMode("offline")
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
+
+  // shakeを解除
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const newShakes = shakes.slice();
+      for (let i = 0; i <= 8; i++) {
+        newShakes[i] = "";
+      }
+      setShakes(newShakes);
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shakes]);
+
+  // 勝敗判定
+  useEffect(() => {
+    if (logMode) return;
+    CheckWinner(squares);
+
+    // 勝者が決まったらモーダルを表示
+    //紙吹雪を出す
+    //localStorageに保存
+    if (!winner) return;
+    const date = new Date();
+    if (!localStorage.getItem("OXwinnerLog")) {
+      const winnerData = [
+        {
+          winner: winner,
+          squares: squares,
+          date: date.toLocaleString(),
+        },
+      ]
+      localStorage.setItem("OXwinnerLog", JSON.stringify(winnerData));
+    } else {
+      const winnerData = {
+        winner: winner,
+        squares: squares,
+        date: date.toLocaleString(),
+      }
+      const winnerLog = JSON.parse(localStorage.getItem("OXwinnerLog"));
+      winnerLog.push(winnerData);
+      localStorage.setItem("OXwinnerLog", JSON.stringify(winnerLog));
+    }
+
+    setWinnerModalShow(true);
+    //紙吹雪を出す
+    reward();
+    setTimeout(() => { reward(); }, 200);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [squares, winner]);
+
+  useEffect(() => {
+    handleSquareReset("reset");
+    if (playMode === "online") {
+      setClickDisable(true);
+    } else {
+      setClickDisable(false);
+    }
+
+    //だるすぎ
+    // url.searchParams.set("mode", playMode);
+    // window.history.pushState(null, '', url);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playMode]);
 
   //勝敗を判定
   const CheckWinner = (squares) => {
@@ -124,29 +198,6 @@ function App() {
     }
   };
 
-  // shakeを解除
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const newShakes = shakes.slice();
-      for (let i = 0; i <= 8; i++) {
-        newShakes[i] = "";
-      }
-      setShakes(newShakes);
-    }, 500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shakes])
-
-  useEffect(() => {
-    handleSquareReset("reset");
-    if (playMode === "online") {
-      setClickDisable(true);
-    } else {
-      setClickDisable(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playMode])
-
   // マスをリセット
   const handleSquareReset = (mode) => {
     switch (mode) {
@@ -169,52 +220,32 @@ function App() {
     }
   };
 
-  // 勝敗判定
-  useEffect(() => {
-    if (logMode) return;
-    CheckWinner(squares);
-
-    // 勝者が決まったらモーダルを表示
-    //紙吹雪を出す
-    //localStorageに保存
-    if (!winner) return;
-    const date = new Date();
-    if (!localStorage.getItem("OXwinnerLog")) {
-      const winnerData = [
-        {
-          winner: winner,
-          squares: squares,
-          date: date.toLocaleString(),
-        },
-      ]
-      localStorage.setItem("OXwinnerLog", JSON.stringify(winnerData));
-    } else {
-      const winnerData = {
-        winner: winner,
-        squares: squares,
-        date: date.toLocaleString(),
-      }
-      const winnerLog = JSON.parse(localStorage.getItem("OXwinnerLog"));
-      winnerLog.push(winnerData);
-      localStorage.setItem("OXwinnerLog", JSON.stringify(winnerLog));
-    }
-
-    setWinnerModalShow(true);
-    //紙吹雪を出す
-    reward();
-    setTimeout(() => { reward(); }, 200);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [squares, winner]);
-
   const handleBack = () => {
     history.replaceState(null, '', url.pathname);
     window.location.reload();
   }
 
+  const ConnectAndDisconnect = () => {
+    if (!isConnect) {
+      setConnectModalShow(true);
+    } else {
+      setIsConnect(false);
+      setRoomPass("");
+      setOnlineTurn(null);
+      // playModeChangeRef.current.dataClear();
+
+      //データを消すようにするのと、firebase上のXまたはOのtrueをfalseにする
+    }
+  }
+
+
   return (
     <>
       <div className={`App`}>
-
+        {/* 紙吹雪 */}
+        <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
+          <div id='reward' />
+        </div>
         <div className={style.wrap}>
           {/* タイトル */}
           {logMode && (
@@ -223,71 +254,82 @@ function App() {
               <div>{date_param_state}</div>
             </div>
           )}
-          <div className={style.top}>
-            <div className={style.title} aria-label='タイトル'>
-              <div className='d-flex'>
-                <span>三目並べ</span>
-                <img src={onlineSVG} alt="オンラインモード" className={playMode === "offline" ? "invisible" : "visible"} width={40} style={{ marginLeft: "5px", }} />
-              </div>
-              <span aria-label='モード:'>{playMode === "offline" ? "オフライン" : "オンライン"}</span>
-            </div>
-            {/* 履歴を見るときはターンではなく勝者を表示 */}
-            <Turn turn={turn} logMode={logMode} winner={winner} />
-          </div>
+          {/* タイトル,ターン表示 */}
+          <Head
+            playMode={playMode}
+            onlineTurn={onlineTurn}
+            turn={turn}
+            logMode={logMode}
+            winner={winner}
+          />
           {/* ゲーム盤 */}
-          <div className={style.row}>
-            <Square i={0} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={1} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={2} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-          </div>
-          <div className={style.row}>
-            <Square i={3} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={4} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={5} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-          </div>
-          <div className={style.row}>
-            <Square i={6} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={7} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-            <Square i={8} shakes={shakes} turn={turn} squareRemove={squareRemove} handleClick={handleClick} squares={squares} setSquares={setSquares} />
-          </div>
+          <SquaresBox
+            shakes={shakes}
+            turn={turn}
+            squareRemove={squareRemove}
+            handleClick={handleClick}
+            squares={squares}
+            setSquares={setSquares}
+          />
           {/* 履歴を見るときはボタンを非表示 */}
           {logMode || playMode === "online" ? (
             <div className={`w-100 ${playMode === "online" && ("d-none")}`}>
-              <Button className='mt-2 w-100' onClick={handleBack}>戻る</Button>
+              <Button
+                className='mt-2 w-100'
+                onClick={handleBack}
+              >
+                戻る
+              </Button>
             </div>
           ) : (
             <div className='w-100'>
-              <Button variant='primary' className='mt-2 w-100' onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}>マスをリセット</Button>
-              <Button className='mt-2 w-100' onClick={() => setWinnerLogModalShow(true)}>勝敗を見る</Button>
+              <Button
+                variant='primary'
+                className='mt-2 w-100'
+                onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}
+              >
+                マスをリセット
+              </Button>
+              <Button
+                className='mt-2 w-100'
+                onClick={() => setWinnerLogModalShow(true)}>
+                勝敗を見る
+              </Button>
             </div>
           )}
           {playMode === "online" && (
             <div className='w-100'>
-              <Button className='mt-2 w-100' onClick={() => setConnectModalShow(true)}>オンラインに接続</Button>
+              <Button
+                className='mt-2 w-100'
+                onClick={() => ConnectAndDisconnect()}
+              >
+                {isConnect ? "切断" : "オンラインに接続"}
+              </Button>
+              <div style={{ textAlign: "center", marginTop: "3px" }}> {roomPass && (<>コード : <span style={{ userSelect: "all" }}>{roomPass}</span></>)}</div>
             </div>
           )}
         </div >
-        {/* 紙吹雪 */}
-        <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
-          <div id='reward' />
-        </div>
       </div >
 
       {/* ここでオンラインモードとかに切り替えられるようにしたい */}
-      {/*  一時的に非表示中 */}
       <PlayModeChange
+        playModeChangeRef={playModeChangeRef}
         playMode={playMode}
         setPlayMode={setPlayMode}
         playModeChangeShow={playModeChangeShow}
         setPlayModeChangeShow={setPlayModeChangeShow}
         connectModalShow={connectModalShow}
         setConnectModalShow={setConnectModalShow}
+        setOnlineTurn={setOnlineTurn}
+        setIsConnect={setIsConnect}
+        setRoomPass={setRoomPass}
       />
 
       <ResetAlertModal
         show={resetModalShow}
         handleAgree={() => handleSquareReset("reset")}
-        onHide={() => setResetModalShow(false)} />
+        onHide={() => setResetModalShow(false)}
+      />
       <WinnerContext.Provider value={winner}>
         <WinnerModal
           show={winnerModalShow}

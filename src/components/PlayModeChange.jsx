@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import style from './../assets/styles/PlayModeChange.module.scss'
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -6,10 +6,15 @@ import PropTypes from 'prop-types';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { db } from '../api/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 
-const PlayModeChange = (props) => {
+const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
+    useImperativeHandle(ref, () => {
+
+    });
+
+
     const [value, setValue] = useState("");
     const [err, setErr] = useState("");
     const [data, setData] = useState("");
@@ -19,7 +24,13 @@ const PlayModeChange = (props) => {
             setErr("");
         }, 1500);
         return () => clearTimeout(timer);
-    }, [err])
+    }, [err]);
+
+
+    useEffect(() => {
+        SetTurn();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data])
 
     // 一時的に非表示
     const visible = false;
@@ -31,44 +42,110 @@ const PlayModeChange = (props) => {
         console.log("モードを変更しました。", mode)
     }
 
+    let End = false;
     const ValidationCheck = () => {
+        End = false;
         if (!value) {
+            End = true;
             setErr("コードを入力してください");
+        } else if (value.length < 8) {
+            End = true;
+            setErr("コードは8文字以上で入力してください");
         } else {
             setErr("");
         }
     }
 
-    const handleConnect = async () => {
-        ValidationCheck();
-        console.log("接続")
-        if (value === "") return;
-
-        fetchData();
+    const SET = () => {
+        console.log("run");
+        props.setIsConnect(true);
+        props.setRoomPass(value);
+        props.setConnectModalShow(false);
     }
 
-    const handleNewCreate = () => {
-        ValidationCheck();
-        console.log("新規作成")
-        if (value === "") return;
+    const SetTurn = async () => {
+        const DocRef = doc(db, "ox-game", value);
+        try {
+            if (!data.X) {
+                await updateDoc(DocRef, {
+                    X: true,
+                });
+                props.setOnlineTurn("X");
+            } else if (!data.O) {
+                await updateDoc(DocRef, {
+                    O: true,
+                });
+                props.setOnlineTurn("O");
+            } else {
+                setErr("定員に達しています。");
+            }
+        } catch {
+            setErr("不明なエラーが発生しました。");
+        }
+    }
 
+    const handleConnect = async () => {
+        ValidationCheck();
+        if (End) return;
+        setData("");
+
+        fetchData();
+
+        SET();
+    }
+
+    const handleNewCreate = async () => {
+        ValidationCheck();
+        if (End) return;
+        setData("");
+
+        const DocRef = doc(db, "ox-game", value);
+        const DocSnapshot = await getDoc(DocRef);
+
+        if (DocSnapshot.exists()) {
+            setErr("すでに存在します");
+            return;
+        }
+
+        const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
+        try {
+            await setDoc(doc(db, "ox-game", value), {
+                squares: Array(9).fill(null),
+                startPlayer: startPlayer,
+                turn: startPlayer,
+                winner: null,
+                date: new Date().toLocaleString(),
+                X: false,
+                O: false,
+            });
+            setErr("新規作成しました");
+            props.setConnectModalShow(false);
+        } catch {
+            setErr("作成できませんでした");
+            return;
+        }
+
+        fetchData();
+
+        SET();
     }
 
     const fetchData = async () => {
         try {
-            const messageDocRef = doc(db, "ox-game", value);
-            const messageDocSnapshot = await getDoc(messageDocRef);
+            const DocRef = doc(db, "ox-game", value);
+            const DocSnapshot = await getDoc(DocRef);
 
-            if (messageDocSnapshot.exists()) {
-                const data = messageDocSnapshot.data();
-                console.log("取得しました。", data);
+            if (DocSnapshot.exists()) {
+                const data = DocSnapshot.data();
                 setData(data);
+                return "success";
             } else {
                 setErr("部屋が存在しません");
-
+                return "error_not_found";
             }
         } catch {
             setErr("取得できませんでした");
+            return "error";
         }
     };
 
@@ -131,7 +208,7 @@ const PlayModeChange = (props) => {
         </>
 
     )
-}
+})
 
 PlayModeChange.propTypes = {
     setPlayMode: PropTypes.func,
@@ -139,6 +216,9 @@ PlayModeChange.propTypes = {
     setConnectModalShow: PropTypes.func,
     playModeChangeShow: PropTypes.bool,
     connectModalShow: PropTypes.bool,
+    setOnlineTurn: PropTypes.func,
+    setIsConnect: PropTypes.func,
+    setRoomPass: PropTypes.func,
 };
 
 export default PlayModeChange
