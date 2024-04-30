@@ -272,8 +272,7 @@ function App() {
       setOnlineTurn(null);
       setData(null);
       setOnlinePlayerMark("");
-      setSquares(["", "", "", "", "", "", "", "", ""]);
-      setSquareRemove([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+      handleSquareReset("reset");
       setOnlineWinner(null);
     }
   }
