@@ -25,7 +25,7 @@ const Head = (props) => {
                 {props.playMode === "offline" ? (
                     <Turn turn={props.turn} logMode={props.logMode} winner={props.winner} />
                 ) : (
-                    <OnlineTurn turn={props.onlineTurn} onlineTurn={props.onlineTurn} />
+                    <OnlineTurn onlinePlayerMark={props.onlinePlayerMark} onlineTurn={props.onlineTurn} />
                 )}
             </div>
         </>
@@ -38,6 +38,7 @@ Head.propTypes = {
     turn: PropTypes.string,
     logMode: PropTypes.bool,
     winner: PropTypes.string,
+    onlinePlayerMark: PropTypes.string,
 }
 
 export default Head

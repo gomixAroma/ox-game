@@ -1,6 +1,6 @@
 import './App.scss'
 import style from './assets/styles/Square.module.scss'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import ResetAlertModal from './components/ResetAlertModal';
 import WinnerModal from './components/WinnerModal';
@@ -10,16 +10,16 @@ import PlayModeChange from './components/PlayModeChange';
 import SquaresBox from './components/SquaresBox';
 import Head from './components/Head';
 
+import { db } from './api/firebase';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import PlayerWaiting from './components/PlayerWaiting';
+
 export const WinnerContext = React.createContext("");
 
 function App() {
 
   //仮
   const visible = false;
-
-
-
-
 
   const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
   const [turn, setTurn] = useState(startPlayer);
@@ -44,13 +44,13 @@ function App() {
   const [onlineTurn, setOnlineTurn] = useState(null);
   const [isConnect, setIsConnect] = useState(false);
   const [roomPass, setRoomPass] = useState("");
+  const [onlinePlayerMark, setOnlinePlayerMark] = useState("");
+  const [data, setData] = useState(null);
 
 
   const { reward } = useReward("reward", "confetti", { spread: 100, zIndex: 1000, elementCount: 200 });
 
   const winPattern = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-
-  const playModeChangeRef = React.createRef(null);
 
   const [date_param_state, setDateParam] = useState(null);
   //履歴閲覧
@@ -142,6 +142,7 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playMode]);
 
+
   //勝敗を判定
   const CheckWinner = (squares) => {
     const O = [];
@@ -170,6 +171,7 @@ function App() {
   // マスをクリック
   const handleClick = (i) => {
     if (winner || clickDisable) return;
+
 
     if (squares[i] === "") {
       const newSquares = squares.slice();
@@ -240,6 +242,7 @@ function App() {
       setIsConnect(false);
       setRoomPass("");
       setOnlineTurn(null);
+      setData(null);
       // playModeChangeRef.current.dataClear();
 
       //データを消すようにするのと、firebase上のXまたはOのtrueをfalseにする
@@ -247,13 +250,35 @@ function App() {
   }
 
 
+  function RealTimeUpdate(value) {
+    // eslint-disable-next-line no-unused-vars
+    const unsub = onSnapshot(doc(db, "ox-game", value), (doc) => {
+      setData(doc.data());
+      GameUpdate(doc.data());
+    });
+  }
+
+  const onlineMark = useRef(null);
+  useEffect(() => {
+    onlineMark.current = onlinePlayerMark;
+  }, [onlinePlayerMark, squares]);
+
+  function GameUpdate(data) {
+    console.info("GameUpdate");
+    console.log("first");
+    if (!data.X || !data.O) return;
+    console.log("second");
+    if (onlineMark.current === data.turn) {
+      setClickDisable(false);
+    } else {
+      setClickDisable(true);
+    }
+  }
+
+
   return (
     <>
       <div className={`App`}>
-        {/* 紙吹雪 */}
-        <div aria-hidden="true" aria-label='紙吹雪' className={style.confetti} >
-          <div id='reward' />
-        </div>
         <div className={style.wrap}>
           {/* タイトル */}
           {logMode && (
@@ -269,6 +294,7 @@ function App() {
             turn={turn}
             logMode={logMode}
             winner={winner}
+            onlinePlayerMark={onlinePlayerMark}
           />
           {/* ゲーム盤 */}
           <SquaresBox
@@ -317,12 +343,15 @@ function App() {
             </div>
           )}
         </div >
+        {playMode === "online" && (
+          <PlayerWaiting data={data} />
+        )}
       </div >
+
 
       {visible && (
         <>
           <PlayModeChange
-            playModeChangeRef={playModeChangeRef}
             playMode={playMode}
             setPlayMode={setPlayMode}
             playModeChangeShow={playModeChangeShow}
@@ -332,10 +361,12 @@ function App() {
             setOnlineTurn={setOnlineTurn}
             setIsConnect={setIsConnect}
             setRoomPass={setRoomPass}
+            setOnlinePlayerMark={setOnlinePlayerMark}
+            setData={setData}
+            RealTimeUpdate={RealTimeUpdate}
           />
         </>
       )}
-
 
       <ResetAlertModal
         show={resetModalShow}

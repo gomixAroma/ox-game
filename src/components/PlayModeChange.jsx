@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { useEffect, useState } from 'react';
 import style from './../assets/styles/PlayModeChange.module.scss'
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -9,15 +9,9 @@ import { db } from '../api/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 
-const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
-    useImperativeHandle(ref, () => {
-
-    });
-
-
+const PlayModeChange = (props) => {
     const [value, setValue] = useState("");
     const [err, setErr] = useState("");
-    const [data, setData] = useState("");
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -26,124 +20,115 @@ const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
         return () => clearTimeout(timer);
     }, [err]);
 
-
-    useEffect(() => {
-        SetTurn();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data]);
-
     const handleChange = (mode) => {
         props.setPlayMode(mode);
         props.setPlayModeChangeShow(false);
-        console.log("モードを変更しました。", mode)
     }
 
-    let End = false;
-    const ValidationCheck = () => {
-        End = false;
-        if (!value) {
-            End = true;
-            setErr("コードを入力してください");
-        } else if (value.length < 8) {
-            End = true;
-            setErr("コードは8文字以上で入力してください");
-        } else {
-            setErr("");
+    const handleConnect = async () => {
+        if (CheckValidation()) return;
+        if (!await CheckRoom()) {
+            setErr("存在しないコードです");
+            return;
         }
-    }
-
-    const SET = () => {
-        console.log("run");
-        props.setIsConnect(true);
-        props.setRoomPass(value);
-        props.setConnectModalShow(false);
-    }
-
-    const SetTurn = async () => {
         const DocRef = doc(db, "ox-game", value);
+        const docSnapshot = await getDoc(DocRef);
+        const data = docSnapshot.data();
+        if (data.winner) {
+            setErr("すでに終了した部屋です");
+            return;
+        } else if (data.X && data.O) {
+            setErr("すでに満員です");
+            return;
+        }
+        props.setIsConnect(true);
+        Setting();
+    }
+
+    const handleNewCreate = async () => {
+        if (CheckValidation()) return;
+        if (await CheckRoom()) {
+            setErr("すでに存在するコードです");
+            return;
+        }
+        const DocRef = doc(db, "ox-game", value);
+        const startTurn = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
+        await setDoc(DocRef, {
+            date: new Date().toLocaleString(),
+            "startTurn": startTurn,
+            "turn": startTurn,
+            "board": Array(9).fill(""),
+            "boardRemove": Array(9).fill(""),
+            "winner": null,
+            "X": null,
+            "O": null,
+        });
+        props.setIsConnect(true);
+        Setting();
+    }
+
+    function CheckValidation() {
+        let err;
+        if (!value) {
+            err = "コードを入力してください"
+        } else if (!/^[a-zA-Z0-9]*$/.test(value)) {
+            err = "半角英数字で入力してください";
+        } else if (value.length < 8) {
+            err = "コードは8文字以上で入力してください";
+        } else {
+            err = "";
+        }
+        if (err) {
+            setErr(err);
+            return true;
+        }
+        return false;
+    }
+
+    async function CheckRoom() {
+        const roomRef = doc(db, "ox-game", value);
+        const docSnap = await getDoc(roomRef);
+        return docSnap.exists();
+    }
+
+    async function Setting() {
+        const DocRef = doc(db, "ox-game", value);
+        const docSnapshot = await getDoc(DocRef);
+        const data = docSnapshot.data();
+        props.setRoomPass(value);
+        props.setOnlineTurn(data.turn);
+
         try {
-            if (!data.X) {
+            if (data.X && data.O) {
+                setErr("すでに満員です");
+                return;
+            } else if (!data.X) {
                 await updateDoc(DocRef, {
                     X: true,
                 });
-                props.setOnlineTurn("X");
+                props.setOnlinePlayerMark("X");
             } else if (!data.O) {
                 await updateDoc(DocRef, {
                     O: true,
                 });
-                props.setOnlineTurn("O");
-            } else {
-                setErr("定員に達しています。");
+                props.setOnlinePlayerMark("O");
             }
-        } catch {
-            setErr("不明なエラーが発生しました。");
-        }
-    }
-
-    const handleConnect = async () => {
-        ValidationCheck();
-        if (End) return;
-        setData("");
-
-        fetchData();
-
-        SET();
-    }
-
-    const handleNewCreate = async () => {
-        ValidationCheck();
-        if (End) return;
-        setData("");
-
-        const DocRef = doc(db, "ox-game", value);
-        const DocSnapshot = await getDoc(DocRef);
-
-        if (DocSnapshot.exists()) {
-            setErr("すでに存在します");
-            return;
-        }
-
-        const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
-        try {
-            await setDoc(doc(db, "ox-game", value), {
-                squares: Array(9).fill(null),
-                startPlayer: startPlayer,
-                turn: startPlayer,
-                winner: null,
-                date: new Date().toLocaleString(),
-                X: false,
-                O: false,
-            });
-            setErr("新規作成しました");
             props.setConnectModalShow(false);
-        } catch {
-            setErr("作成できませんでした");
+
+            const updatedDocSnapshot = await getDoc(DocRef); // 変数名を変更
+            const updatedData = updatedDocSnapshot.data(); // 変数名を変更
+            console.log(updatedData);
+            props.setData(updatedData);
+        } catch (e) {
+            console.error(e);
+            setErr("エラーが発生しました");
             return;
         }
 
-        fetchData();
-
-        SET();
+        props.RealTimeUpdate(value);
+        setValue("");
     }
 
-    const fetchData = async () => {
-        try {
-            const DocRef = doc(db, "ox-game", value);
-            const DocSnapshot = await getDoc(DocRef);
-
-            if (DocSnapshot.exists()) {
-                const data = DocSnapshot.data();
-                setData(data);
-                return "success";
-            } else {
-                setErr("部屋が存在しません");
-                return "error_not_found";
-            }
-        } catch {
-            setErr("取得できませんでした");
-            return "error";
-        }
-    };
 
     return (
         <>
@@ -177,22 +162,23 @@ const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
                 </Modal.Header>
                 <Modal.Body>
                     <div>
-                        <InputGroup className="mb-3">
+                        <InputGroup className={`mb-3 ${style.input}`}>
                             <Form.Control
                                 aria-label="Default"
                                 aria-describedby="inputGroup-sizing-default"
                                 placeholder="コードを入力"
                                 required
-                                className='text-center'
+                                className={`text-center`}
                                 onChange={(e) => setValue(e.target.value)}
                                 value={value}
                             />
                         </InputGroup>
+                        <div aria-label='エラーテキスト' className={`${style.errText} ${err && style.errShow}`} >{err}</div>
                         <div className={style.connectBtn}>
                             <Button className='w-100' type='submit' onClick={handleConnect}>接続</Button>
                             <Button className='w-100' type='submit' onClick={handleNewCreate}>新規作成</Button>
                         </div>
-                        <div className='small text-center mt-1' style={{ color: "red" }}>{err ? (err) : ("　")}</div>
+                        {/* <div className='small text-center mt-1' style={{ color: "red" }}>{err ? (err) : ("")}</div> */}
                     </div>
                 </Modal.Body>
                 <Modal.Footer>
@@ -204,9 +190,10 @@ const PlayModeChange = forwardRef(function PlayModeChange(props, ref) {
         </>
 
     )
-})
+}
 
 PlayModeChange.propTypes = {
+
     setPlayMode: PropTypes.func,
     setPlayModeChangeShow: PropTypes.func,
     setConnectModalShow: PropTypes.func,
@@ -215,6 +202,11 @@ PlayModeChange.propTypes = {
     setOnlineTurn: PropTypes.func,
     setIsConnect: PropTypes.func,
     setRoomPass: PropTypes.func,
+    playMode: PropTypes.string,
+    onlineTurn: PropTypes.string,
+    setOnlinePlayerMark: PropTypes.func,
+    setData: PropTypes.func,
+    RealTimeUpdate: PropTypes.func,
 };
 
 export default PlayModeChange

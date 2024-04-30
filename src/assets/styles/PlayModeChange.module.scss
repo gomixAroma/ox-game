@@ -52,3 +52,34 @@ $box-shadow-diffusion: 0px;
         margin-left: $margin;
     }
 }
+
+.input {
+    position: relative;
+}
+
+.errText {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    font-size: 10px;
+    background-color: red;
+    color: #fff;
+    margin-top: -15px;
+    margin-left: 5px;
+    padding: 5px;
+    border-radius: 5px;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 15px;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: red;
+    }
+
+    &.errShow {
+        opacity: 1;
+    }
+}
