@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types'
-import X from "./../assets/images/SVG/x.svg"
-import O from "./../assets/images/SVG/o.svg"
+import OXmark from './OXmark';
 
 const PlayerWaiting = ({ data }) => {
     const t1 = "プレイヤー";
@@ -15,7 +14,8 @@ const PlayerWaiting = ({ data }) => {
         return (
             <div className='d-flex'>
                 <span>{t1}</span>
-                <img src={X} alt="バツ" style={imgStyle} />
+                {/* <img src={X} alt="バツ" style={imgStyle} /> */}
+                <OXmark mark="X" style={imgStyle} />
                 <span>{t2}</span>
             </div>
         )
@@ -23,7 +23,8 @@ const PlayerWaiting = ({ data }) => {
         return (
             <div className='d-flex'>
                 <span>{t1}</span>
-                <img src={O} alt="マル" style={imgStyle} />
+                {/* <img src={O} alt="マル" style={imgStyle} /> */}
+                <OXmark mark="O" style={imgStyle} />
                 <span>{t2}</span>
             </div>
         )

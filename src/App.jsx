@@ -9,17 +9,20 @@ import WinnerLogModal from './components/WinnerLogModal';
 import PlayModeChange from './components/PlayModeChange';
 import SquaresBox from './components/SquaresBox';
 import Head from './components/Head';
+import PlayerWaiting from './components/PlayerWaiting';
 
 import { db } from './api/firebase';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
-import PlayerWaiting from './components/PlayerWaiting';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { DeleteDocument, OnlineBoardAndRemoveUpdate, OnlineDisconnect, OnlineTurnChange } from './api/OnlineFunctions';
+import OXmark from './components/OXmark';
 
 export const WinnerContext = React.createContext("");
 
 function App() {
+  const onlineMark = useRef(null);
 
   //仮
-  const visible = false;
+  const visible = true;
 
   const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
   const [turn, setTurn] = useState(startPlayer);
@@ -46,13 +49,14 @@ function App() {
   const [roomPass, setRoomPass] = useState("");
   const [onlinePlayerMark, setOnlinePlayerMark] = useState("");
   const [data, setData] = useState(null);
-
+  const [onlineWinner, setOnlineWinner] = useState(null);
 
   const { reward } = useReward("reward", "confetti", { spread: 100, zIndex: 1000, elementCount: 200 });
 
   const winPattern = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
 
   const [date_param_state, setDateParam] = useState(null);
+
   //履歴閲覧
   const url = new URL(window.location.href);
   useEffect(() => {
@@ -135,10 +139,6 @@ function App() {
       setClickDisable(false);
     }
 
-    //だるすぎ
-    // url.searchParams.set("mode", playMode);
-    // window.history.pushState(null, '', url);
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playMode]);
 
@@ -162,50 +162,68 @@ function App() {
     for (let i = 0; i < winPattern.length; i++) {
       if (O.includes(winPattern[i][0]) && O.includes(winPattern[i][1]) && O.includes(winPattern[i][2])) {
         setWinner("O");
+        if (playMode === "online") setOnlineWinner("O");
       } else if (X.includes(winPattern[i][0]) && X.includes(winPattern[i][1]) && X.includes(winPattern[i][2])) {
         setWinner("X");
+        if (playMode === "online") setOnlineWinner("X");
       }
     }
   };
 
   // マスをクリック
-  const handleClick = (i) => {
+  const handleClick = async (i) => {
     if (winner || clickDisable) return;
-
 
     if (squares[i] === "") {
       const newSquares = squares.slice();
-      newSquares[i] = turn;
+      newSquares[i] = playMode === "offline" ? turn : onlinePlayerMark;
 
       const newSquareRemove = squareRemove.slice();
       newSquareRemove[i] = 7;
 
       for (let r = 0; r < squareRemove.length; r++) {
-        newSquareRemove[r] = newSquareRemove[r] - 1;
+        let minus;
+        if (playMode === "offline") {
+          minus = 1;
+        } else {
+          minus = 1;
+        }
+        newSquareRemove[r] = newSquareRemove[r] - minus;
       }
 
+      var onlineNewSquares;
+      onlineNewSquares = newSquares;
       setSquares(newSquares);
       setSquareRemove(newSquareRemove);
 
+      //0のマスを消す
       for (let j = 0; j <= 8; j++) {
         if (newSquareRemove[j] === 0) {
           const newSquares2 = newSquares.slice();
           newSquares2[j] = "";
+          onlineNewSquares = newSquares2;
           setSquares(newSquares2);
         }
       }
 
-      if (turn === "X") {
+      if (turn === "X" && playMode === "offline") {
         setTurn("O");
-      } else if (turn === "O") {
+      } else if (turn === "O" && playMode === "offline") {
         setTurn("X");
       }
 
+      //オンラインのとき、firebaseに盤面とマーク削除を送信
+      if (playMode === "online") {
+        OnlineBoardAndRemoveUpdate(roomPass, data, onlineNewSquares, newSquareRemove);
+      }
     } else {
       const newShakes = shakes.slice();
       newShakes[i] = "shake";
       setShakes(newShakes);
     }
+
+    //オンランインのターンを変更する
+    if (isConnect && playMode === "online") OnlineTurnChange(roomPass, data);
   };
 
   // マスをリセット
@@ -239,42 +257,58 @@ function App() {
     if (!isConnect) {
       setConnectModalShow(true);
     } else {
+      //切断処理
+      OnlineDisconnect(roomPass, onlineMark.current);
+
+      //削除処理
+      if (onlineMark.current === "X" && !data.O) {
+        DeleteDocument(roomPass);
+      } else if (onlineMark.current === "O" && !data.X) {
+        DeleteDocument(roomPass);
+      }
+
       setIsConnect(false);
       setRoomPass("");
       setOnlineTurn(null);
       setData(null);
-      // playModeChangeRef.current.dataClear();
-
-      //データを消すようにするのと、firebase上のXまたはOのtrueをfalseにする
+      setOnlinePlayerMark("");
+      setSquares(["", "", "", "", "", "", "", "", ""]);
+      setSquareRemove([0, 0, 0, 0, 0, 0, 0, 0, 0]);
+      setOnlineWinner(null);
     }
   }
-
 
   function RealTimeUpdate(value) {
     // eslint-disable-next-line no-unused-vars
     const unsub = onSnapshot(doc(db, "ox-game", value), (doc) => {
       setData(doc.data());
+      //OnlineFunctions.js
       GameUpdate(doc.data());
     });
   }
 
-  const onlineMark = useRef(null);
   useEffect(() => {
     onlineMark.current = onlinePlayerMark;
   }, [onlinePlayerMark, squares]);
 
+  //firebase上のデータが更新されたときに発火する関数
   function GameUpdate(data) {
-    console.info("GameUpdate");
-    console.log("first");
-    if (!data.X || !data.O) return;
-    console.log("second");
+    if (!data) return;
+    if (!data.X || !data.O) {
+      setClickDisable(true);
+      return
+    }
     if (onlineMark.current === data.turn) {
       setClickDisable(false);
     } else {
       setClickDisable(true);
     }
-  }
 
+    setSquares(data.board);
+    setSquareRemove(data.boardRemove);
+
+    setOnlineTurn(data.turn);
+  }
 
   return (
     <>
@@ -311,9 +345,7 @@ function App() {
               <Button
                 className='mt-2 w-100'
                 onClick={handleBack}
-              >
-                戻る
-              </Button>
+              >戻る</Button>
             </div>
           ) : (
             <div className='w-100'>
@@ -321,14 +353,11 @@ function App() {
                 variant='primary'
                 className='mt-2 w-100'
                 onClick={() => winner ? (handleSquareReset("reset")) : (handleSquareReset("check"))}
-              >
-                マスをリセット
-              </Button>
+              >マスをリセット</Button>
               <Button
                 className='mt-2 w-100'
-                onClick={() => setWinnerLogModalShow(true)}>
-                勝敗を見る
-              </Button>
+                onClick={() => setWinnerLogModalShow(true)}
+              >勝敗を見る</Button>
             </div>
           )}
           {playMode === "online" && (
@@ -336,14 +365,15 @@ function App() {
               <Button
                 className='mt-2 w-100'
                 onClick={() => ConnectAndDisconnect()}
-              >
-                {isConnect ? "切断" : "オンラインに接続"}
-              </Button>
-              <div style={{ textAlign: "center", marginTop: "3px" }}> {roomPass && (<>コード : <span style={{ userSelect: "all" }}>{roomPass}</span></>)}</div>
+              >{isConnect ? "切断" : "オンラインに接続"}</Button>
+              <div style={{ textAlign: "center", marginTop: "3px" }} className='d-flex justify-content-center align-items-center'>
+                {roomPass && !onlineWinner && (<>コード : <span style={{ userSelect: "all" }}>{roomPass}</span></>)}
+                {onlineWinner && (<><OXmark mark={onlineWinner} width={20} /><span>が勝ちました</span></>)}
+              </div>
             </div>
           )}
-        </div >
-        {playMode === "online" && (
+        </div>
+        {playMode === "online" && isConnect && !onlineWinner && (
           <PlayerWaiting data={data} />
         )}
       </div >

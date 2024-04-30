@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
-import X from "./../assets/images/SVG/x.svg"
-import O from "./../assets/images/SVG/o.svg"
+import OXmark from './OXmark';
 // import { useState } from 'react';
 
 const mark = {
@@ -28,9 +27,11 @@ const OnlineTurn = (props) => {
                         <div style={des}>あなたは</div>
                         {
                             props.onlinePlayerMark === "X" ? (
-                                <img src={X} alt="あなたはバツです。" style={mark} />
+                                // <img src={X} alt="あなたはバツです。" style={mark} />
+                                <OXmark mark="X" style={mark} />
                             ) : (
-                                <img src={O} alt="あなたはマルです。" style={mark} />
+                                // <img src={O} alt="あなたはマルです。" style={mark} />
+                                <OXmark mark="O" style={mark} />
                             )
                         }
                     </div>
@@ -38,9 +39,11 @@ const OnlineTurn = (props) => {
                         <div style={des}>ターン</div>
                         {
                             props.onlineTurn === "X" ? (
-                                <img src={X} alt="現在のターンはバツ" style={mark} />
+                                // <img src={X} alt="現在のターンはバツ" style={mark} />
+                                <OXmark mark="X" style={mark} />
                             ) : (
-                                <img src={O} alt="現在のターンはバツ" style={mark} />
+                                // <img src={O} alt="現在のターンはバツ" style={mark} />
+                                <OXmark mark="O" style={mark} />
                             )
                         }
                     </div>

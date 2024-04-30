@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { createRef, useEffect, useState } from 'react';
 import style from './../assets/styles/PlayModeChange.module.scss'
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -12,6 +12,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 const PlayModeChange = (props) => {
     const [value, setValue] = useState("");
     const [err, setErr] = useState("");
+    const ref = createRef(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -19,6 +20,13 @@ const PlayModeChange = (props) => {
         }, 1500);
         return () => clearTimeout(timer);
     }, [err]);
+
+    useEffect(() => {
+        if (props.connectModalShow) {
+            ref.current.focus();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.connectModalShow])
 
     const handleChange = (mode) => {
         props.setPlayMode(mode);
@@ -34,10 +42,7 @@ const PlayModeChange = (props) => {
         const DocRef = doc(db, "ox-game", value);
         const docSnapshot = await getDoc(DocRef);
         const data = docSnapshot.data();
-        if (data.winner) {
-            setErr("すでに終了した部屋です");
-            return;
-        } else if (data.X && data.O) {
+        if (data.X && data.O) {
             setErr("すでに満員です");
             return;
         }
@@ -59,7 +64,7 @@ const PlayModeChange = (props) => {
             "turn": startTurn,
             "board": Array(9).fill(""),
             "boardRemove": Array(9).fill(""),
-            "winner": null,
+            // "winner": null,
             "X": null,
             "O": null,
         });
@@ -75,6 +80,8 @@ const PlayModeChange = (props) => {
             err = "半角英数字で入力してください";
         } else if (value.length < 8) {
             err = "コードは8文字以上で入力してください";
+        } else if (value.length > 20) {
+            err = "コードは20文字以下で入力してください";
         } else {
             err = "";
         }
@@ -117,7 +124,6 @@ const PlayModeChange = (props) => {
 
             const updatedDocSnapshot = await getDoc(DocRef); // 変数名を変更
             const updatedData = updatedDocSnapshot.data(); // 変数名を変更
-            console.log(updatedData);
             props.setData(updatedData);
         } catch (e) {
             console.error(e);
@@ -127,6 +133,15 @@ const PlayModeChange = (props) => {
 
         props.RealTimeUpdate(value);
         setValue("");
+    }
+
+    function handleCodeRandom() {
+        let code = "";
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (let i = 0; i < 12; i++) {
+            code += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        setValue(code);
     }
 
 
@@ -171,7 +186,9 @@ const PlayModeChange = (props) => {
                                 className={`text-center`}
                                 onChange={(e) => setValue(e.target.value)}
                                 value={value}
+                                ref={ref}
                             />
+                            <Button onClick={handleCodeRandom} title="コードを自動生成します">生成</Button>
                         </InputGroup>
                         <div aria-label='エラーテキスト' className={`${style.errText} ${err && style.errShow}`} >{err}</div>
                         <div className={style.connectBtn}>
