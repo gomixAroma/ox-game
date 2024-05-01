@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 
 const style = {
     height: "30px",
+    width: "180px",
 }
 
 const RoomPass = ({ value }) => {
