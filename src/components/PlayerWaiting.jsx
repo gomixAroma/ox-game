@@ -12,7 +12,7 @@ const PlayerWaiting = ({ data }) => {
 
     if (data && !data.X && data.O) {
         return (
-            <div className='d-flex'>
+            <div className='d-flex my-2'>
                 <span>{t1}</span>
                 {/* <img src={X} alt="バツ" style={imgStyle} /> */}
                 <OXmark mark="X" style={imgStyle} />
@@ -21,7 +21,7 @@ const PlayerWaiting = ({ data }) => {
         )
     } else if (data && !data.O && data.X) {
         return (
-            <div className='d-flex'>
+            <div className='d-flex my-2'>
                 <span>{t1}</span>
                 {/* <img src={O} alt="マル" style={imgStyle} /> */}
                 <OXmark mark="O" style={imgStyle} />

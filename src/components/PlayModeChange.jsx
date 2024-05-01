@@ -126,6 +126,7 @@ const PlayModeChange = (props) => {
             const updatedData = updatedDocSnapshot.data(); // 変数名を変更
             props.setData(updatedData);
         } catch (e) {
+            // eslint-disable-next-line no-console
             console.error(e);
             setErr("エラーが発生しました");
             return;
@@ -210,7 +211,6 @@ const PlayModeChange = (props) => {
 }
 
 PlayModeChange.propTypes = {
-
     setPlayMode: PropTypes.func,
     setPlayModeChangeShow: PropTypes.func,
     setConnectModalShow: PropTypes.func,

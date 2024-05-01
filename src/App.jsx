@@ -15,14 +15,12 @@ import { db } from './api/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { DeleteDocument, OnlineBoardAndRemoveUpdate, OnlineDisconnect, OnlineTurnChange } from './api/OnlineFunctions';
 import OXmark from './components/OXmark';
+import RoomPass from './components/RoomPass';
 
 export const WinnerContext = React.createContext("");
 
 function App() {
   const onlineMark = useRef(null);
-
-  //仮
-  const visible = true;
 
   const startPlayer = Math.floor(Math.random() * 2) === 0 ? "X" : "O";
   const [turn, setTurn] = useState(startPlayer);
@@ -132,10 +130,10 @@ function App() {
   }, [squares, winner]);
 
   useEffect(() => {
-    handleSquareReset("reset");
     if (playMode === "online") {
       setClickDisable(true);
-    } else {
+      handleSquareReset("reset");
+    } else if (playMode === "offline") {
       setClickDisable(false);
     }
 
@@ -292,8 +290,8 @@ function App() {
 
   //firebase上のデータが更新されたときに発火する関数
   function GameUpdate(data) {
-    if (!data) return;
-    if (!data.X || !data.O) {
+    // if (!data) return;
+    if (!data.X || !data.O || !data) {
       setClickDisable(true);
       return
     }
@@ -366,7 +364,7 @@ function App() {
                 onClick={() => ConnectAndDisconnect()}
               >{isConnect ? "切断" : "オンラインに接続"}</Button>
               <div style={{ textAlign: "center", marginTop: "3px" }} className='d-flex justify-content-center align-items-center'>
-                {roomPass && !onlineWinner && (<>コード : <span style={{ userSelect: "all" }}>{roomPass}</span></>)}
+                {roomPass && !onlineWinner && (<><span>コード : </span><span style={{ userSelect: "all" }}><RoomPass value={roomPass} /></span></>)}
                 {onlineWinner && (<><OXmark mark={onlineWinner} width={20} /><span>が勝ちました</span></>)}
               </div>
             </div>
@@ -378,23 +376,21 @@ function App() {
       </div >
 
 
-      {visible && (
-        <>
-          <PlayModeChange
-            playMode={playMode}
-            setPlayMode={setPlayMode}
-            playModeChangeShow={playModeChangeShow}
-            setPlayModeChangeShow={setPlayModeChangeShow}
-            connectModalShow={connectModalShow}
-            setConnectModalShow={setConnectModalShow}
-            setOnlineTurn={setOnlineTurn}
-            setIsConnect={setIsConnect}
-            setRoomPass={setRoomPass}
-            setOnlinePlayerMark={setOnlinePlayerMark}
-            setData={setData}
-            RealTimeUpdate={RealTimeUpdate}
-          />
-        </>
+      {!isConnect && !logMode && (
+        <PlayModeChange
+          playMode={playMode}
+          setPlayMode={setPlayMode}
+          playModeChangeShow={playModeChangeShow}
+          setPlayModeChangeShow={setPlayModeChangeShow}
+          connectModalShow={connectModalShow}
+          setConnectModalShow={setConnectModalShow}
+          setOnlineTurn={setOnlineTurn}
+          setIsConnect={setIsConnect}
+          setRoomPass={setRoomPass}
+          setOnlinePlayerMark={setOnlinePlayerMark}
+          setData={setData}
+          RealTimeUpdate={RealTimeUpdate}
+        />
       )}
 
       <ResetAlertModal
